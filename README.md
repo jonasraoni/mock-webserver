@@ -2,9 +2,7 @@
 
 [![Latest Stable Version](https://poser.pugx.org/donatj/mock-webserver/version)](https://packagist.org/packages/donatj/mock-webserver)
 [![License](https://poser.pugx.org/donatj/mock-webserver/license)](https://packagist.org/packages/donatj/mock-webserver)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/donatj/mock-webserver/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/donatj/mock-webserver)
 [![CI](https://github.com/donatj/mock-webserver/workflows/CI/badge.svg?)](https://github.com/donatj/mock-webserver/actions?query=workflow%3ACI)
-[![Build Status](https://travis-ci.org/donatj/mock-webserver.svg?branch=master)](https://travis-ci.org/donatj/mock-webserver)
 
 
 Simple, easy to use Mock Web Server for PHP unit testing. Gets along simply with PHPUnit and other unit testing frameworks.
@@ -65,7 +63,7 @@ echo file_get_contents($url);
 Outputs:
 
 ```
-Requesting: http://127.0.0.1:61874/endpoint?get=foobar
+Requesting: http://127.0.0.1:61355/endpoint?get=foobar
 
 {
     "_GET": {
@@ -75,7 +73,7 @@ Requesting: http://127.0.0.1:61874/endpoint?get=foobar
     "_FILES": [],
     "_COOKIE": [],
     "HEADERS": {
-        "Host": "127.0.0.1:61874",
+        "Host": "127.0.0.1:61355",
         "Connection": "close"
     },
     "METHOD": "GET",
@@ -126,13 +124,11 @@ echo $content . "\n";
 Outputs:
 
 ```
-Requesting: http://127.0.0.1:61874/definedPath
+Requesting: http://127.0.0.1:61355/definedPath
 
 HTTP/1.0 200 OK
-Host: 127.0.0.1:61874
-Date: Tue, 31 Aug 2021 19:50:15 GMT
+Host: 127.0.0.1:61355
 Connection: close
-X-Powered-By: PHP/7.3.25
 Cache-Control: no-cache
 Content-type: text/html; charset=UTF-8
 
@@ -176,10 +172,8 @@ Outputs:
 
 ```
 HTTP/1.0 404 Not Found
-Host: 127.0.0.1:61874
-Date: Tue, 31 Aug 2021 19:50:15 GMT
+Host: 127.0.0.1:61355
 Connection: close
-X-Powered-By: PHP/7.3.25
 Content-type: text/html; charset=UTF-8
 
 VND.DonatStudios.MockWebServer: Resource '/PageDoesNotExist' not found!
@@ -211,7 +205,7 @@ class ExampleTest extends PHPUnit\Framework\TestCase {
 	}
 
 	public function testGetSetPath() {
-		// $url = http://127.0.0.1:61874/definedEndPoint
+		// $url = http://127.0.0.1:61355/definedEndPoint
 		$url    = self::$server->setResponseOfPath('/definedEndPoint', new Response('foo bar content'));
 		$result = file_get_contents($url);
 		$this->assertSame('foo bar content', $result);
@@ -223,6 +217,66 @@ class ExampleTest extends PHPUnit\Framework\TestCase {
 	}
 
 }
+
+```
+
+### Delayed Response Usage
+
+By default responses will happen instantly. If you're looking to test timeouts, the DelayedResponse response wrapper may be useful.
+
+```php
+<?php
+
+use donatj\MockWebServer\DelayedResponse;
+use donatj\MockWebServer\MockWebServer;
+use donatj\MockWebServer\Response;
+
+require __DIR__ . '/../vendor/autoload.php';
+
+$server = new MockWebServer;
+$server->start();
+
+$response = new Response(
+	'This is our http body response',
+	[ 'Cache-Control' => 'no-cache' ],
+	200
+);
+
+// Wrap the response in a DelayedResponse object, which will delay the response
+$delayedResponse = new DelayedResponse(
+	$response,
+	100000 // sets a delay of 100000 microseconds (.1 seconds) before returning the response
+);
+
+$realtimeUrl = $server->setResponseOfPath('/realtime', $response);
+$delayedUrl  = $server->setResponseOfPath('/delayed', $delayedResponse);
+
+echo "Requesting: $realtimeUrl\n\n";
+
+// This request will run as quickly as possible
+$start = microtime(true);
+file_get_contents($realtimeUrl);
+echo "Realtime Request took: " . (microtime(true) - $start) . " seconds\n\n";
+
+echo "Requesting: $delayedUrl\n\n";
+
+// The request will take the delayed time + the time it takes to make and transfer the request
+$start = microtime(true);
+file_get_contents($delayedUrl);
+echo "Delayed Request took: " . (microtime(true) - $start) . " seconds\n\n";
+
+```
+
+Outputs:
+
+```
+Requesting: http://127.0.0.1:61355/realtime
+
+Realtime Request took: 0.015669107437134 seconds
+
+Requesting: http://127.0.0.1:61355/delayed
+
+Delayed Request took: 0.10729098320007 seconds
 
 ```
 
@@ -271,7 +325,7 @@ echo $contentThree . "\n";
 Outputs:
 
 ```
-Requesting: http://127.0.0.1:61874/definedPath
+Requesting: http://127.0.0.1:61355/definedPath
 
 Response One
 Response Two
@@ -317,10 +371,10 @@ foreach( [ ResponseByMethod::METHOD_GET, ResponseByMethod::METHOD_POST ] as $met
 Outputs:
 
 ```
-GET request to http://127.0.0.1:61874/foo/bar:
+GET request to http://127.0.0.1:61355/foo/bar:
 This is our http GET response
 
-POST request to http://127.0.0.1:61874/foo/bar:
+POST request to http://127.0.0.1:61355/foo/bar:
 This is our http POST response
 
 ```
