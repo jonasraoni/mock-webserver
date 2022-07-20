@@ -167,7 +167,6 @@ class MockWebServer_IntegrationTest extends BaseServerTest {
 		$realtimeUrl = self::$server->setResponseOfPath('/realtimePath', $realtimeResponse);
 		$delayedUrl  = self::$server->setResponseOfPath('/delayedPath', $delayedResponse);
 
-
 		$realtimeStart = microtime(true);
 		file_get_contents($realtimeUrl);
 
